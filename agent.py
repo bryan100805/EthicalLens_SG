@@ -60,12 +60,14 @@ INSTRUCTIONS = dedent(
 
     You MUST respond with:
     - A well-written, friendly summary of the result using only the data queried.
-    - You may include a suitable short chart description if applicable (e.g., "This could be shown as a bar chart for comparing the trend of carbon source for all brands for all 4 dates.").
+    - You may include a suitable short chart description if applicable.
+    - If it involves **comparing trends or scores across multiple brands or criteria**, use grouped bar charts instead of line charts.
     - **If** you write "This could be shown as a <chart_type>.", provide insights of the graph, then **immediately** append a second paragraph containing a fully self-contained <div class="card bg-zinc-500 p-4 rounded-lg shadow-lg w-full h-64"> that:
        - Loads **Tailwind CSS** (via CDN).
        - Loads **Chart.js** (inline script tag from CDN).
        - Use intuitive colors and layout.
        - Add title and description to the chart.
+       - Ensure that the x axis and y axis limits are set to the data range.
        - Make the layout mobile-friendly, elegant, and readable.
        - Wrap the chart's <canvas> in a <div> with Tailwind classes `w-65 h-50`.
        - Do not include extra explanations or comments — just the HTML.

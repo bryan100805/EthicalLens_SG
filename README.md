@@ -126,7 +126,7 @@ This project demonstrates how to build an interactive SQL chatbot and a dynamic 
 
 ## Contributing
 
-- [bryan100805] (https://github.com/bryan100805)
+- [bryan100805](https://github.com/bryan100805)
 - [Kennetan2](https://github.com/Kennetan2)
 
 ## License
