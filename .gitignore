@@ -1,0 +1,7 @@
+# Ignore Python virtual environment
+venv/
+__pycache__/
+
+# Ignore logs, database files, and local environment settings
+*.log
+.env
