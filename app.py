@@ -11,6 +11,9 @@ import json
 from agent import run_agent
 from dashboard_agent import run_agent as run_dashboard_agent
 from brand_agent import get_brand_list, get_brand_details
+import plotly.express as px
+from mcp_dashboard_agent import get_all_scores, get_ethics_finance, get_sector_region_breakdown
+import pandas as pd
 from typing import Dict, Any
 import traceback
 import re
@@ -23,7 +26,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
-        "Report a bug": "https://github.com/bryan100805"
+        "Report a bug": "https://github.com/bryan100805/EthicalLens_SG/issues"
     }
 )
 
@@ -31,25 +34,77 @@ st.set_page_config(
 hero, _ = st.columns([3,1])
 with hero:
     st.markdown("# 🛒 EthicalLens SG")
-    st.markdown(
-        "With Model Context Protocol (MCP), interact with a real-time MySQL database using **natural language** and get instant charts & alerts."
-    )
+    st.write(
+    "Empower your shopping with full transparency on labor practices, sourcing, carbon footprint, "
+    "animal welfare, and corporate governance.  \n"
+    "EthicalLens SG helps you track, compare, and set alerts on your favorite brands'",
+    "ethical scores - all in one place. \n\n"
+    "Chat with our AI assistant to get instant insights, or explore our interactive dashboard for deeper analysis. \n"
+)
 
 # Sidebar
-with st.sidebar.expander("ℹ️ About / How to use", expanded=False):
-    st.markdown(
-        """
-        **This app** lets you chat with an SQL DB and spin up instant dashboards.  
-        **How to use:**  
-        1. Start your MCP SQL server  
-        2. Ask natural-language questions under **Chatbot**  
-        3. View your insights under **Dashboard**  
-        4. Check the **Home** tab for our Weekly Spotlight  
+with st.sidebar.expander("ℹ️ Getting Started", expanded=False):
+    st.markdown("""
+        **1.** Start your MCP SQL server so EthicalLens SG can fetch up-to-date brand data.\n
+        **2.** Visit **Home** for our Weekly Spotlight on trending brands.\n
+        **3.** Browse **Brands** to search, filter, and add to your Watchlist.\n
+        **4.** In **Watchlist**, click ✔️ or ⚠️ to view details and set alert thresholds.\n
+        **5.** Use **Chatbot** for ad-hoc, natural-language queries against your data.\n
+        **6.** Under **Dashboard**, hit **Generate** for interactive multi-chart metrics.\n\n
 
         👨‍💻 Contribute on [GitHub](https://github.com/bryan100805)
-        """
-    )
+    """)
 
+# METRIC DEFINITIONS 
+with st.sidebar.expander("Metric Definitions", expanded=False):
+    st.markdown(
+        """
+        **🌱 Labor Score** <span title="Measures company labor conditions: fair wages, working hours, and safety protocols.">ⓘ</span>  
+        **🔍 Sourcing Score** <span title="Assesses transparency of raw-material sourcing and supplier audits.">ⓘ</span>  
+        **⚡ Carbon Score** <span title="Tracks greenhouse-gas emissions and reduction initiatives.">ⓘ</span>  
+        **🐾 Animal Score** <span title="Evaluates animal testing policies and cruelty-free product lines.">ⓘ</span>  
+        **🏛️ Governance Score** <span title="Rates board oversight, ethics policies, and anti-corruption measures.">ⓘ</span>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+    """
+    <style>
+    /* Custom tooltip styling */
+    .tooltip {
+      position: relative;
+      display: inline-block;
+      cursor: help;
+    }
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 220px;
+      background-color: #2f7a4f;
+      color: #fff;
+      text-align: left;
+      border-radius: 6px;
+      padding: 8px;
+      position: absolute;
+      z-index: 9999;
+      bottom: 125%; /* position above */
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0;
+      transition: opacity 0.2s;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      font-size: 0.9rem;
+      line-height: 1.2;
+    }
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+      opacity: 1;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+# Function to display HTML dashboard
 def display_html_dashboard(html_content: str):
     """Displays the HTML dashboard in Streamlit."""
     st.components.v1.html(html_content, height=800, scrolling=True)
@@ -76,7 +131,7 @@ if "selected_watch_brand" not in st.session_state:
     st.session_state.selected_watch_brand = None
 
 # Tabs
-tab_home, tab_brand, tab_watch, tab1, tab2 = st.tabs(["Home", "Brands", "Watchlist", "Chatbot", "Dashboard"])
+tab_home, tab_brand, tab_watch, tab_chatbot, tab_dash = st.tabs(["Home", "Brands", "Watchlist", "Chatbot", "Dashboard"])
 
 # --- HOME TAB: Weekly Spotlight Newsletter ---
 with tab_home:
@@ -110,6 +165,11 @@ with tab_home:
         "*Can't wait to see if they keep that green glow-up going in their factories too!*",
         unsafe_allow_html=True,
     )
+    st.markdown(
+        "*🔍 Insider scoop: Rumor has it their switch to 100% recycled polyester last quarter gave 'em that big carbon drop!* 🧐\n"
+        "*🤝 And hey, holding steady on labor means those fair-wage programs are paying off - GO TEAM!*",
+        unsafe_allow_html=True,
+    )
 
     # -- Init heart count & toggle --
     count_key  = "post1_heart"
@@ -129,7 +189,7 @@ with tab_home:
     st.markdown("---")
 
     # ---- Post 2: Top Movers ----
-    st.markdown('<div class="tg-date">June 21</div>', unsafe_allow_html=True)
+    st.markdown('<div class="tg-date">June 14</div>', unsafe_allow_html=True)
     st.image("image/brands_top_movers.png", width=400)
     st.subheader("Top Movers This Week")
     st.write(
@@ -138,9 +198,12 @@ with tab_home:
         "- **Nike**: Labor Policies -2 pts 📉"
     )
     st.markdown(
-        "*🐦 Allbirds is straight-up slaying the animal welfare game-major props!* 🎉\n"
-        "*Adidas, we need that behind-the-scenes tea ☕️ on where your materials come from, and Nike… let's pick up the pace on worker care!*",
-        unsafe_allow_html=True,
+        """
+        *🐦 Allbirds jumped after launching their new faux-leather alternative-cruelty-free fans are cheering!* 🎉\n
+        *🌍 Adidas dipped when a third-party audit flagged gaps in their raw material traceability, watch for fixes soon!* 🔍\n
+        *👷‍♂️ Nike's slight labor slip likely stems from a factory expansion rollout—hopefully they'll train those new workers up to standard!* 🚀,
+
+        """, unsafe_allow_html=True
     )
     # -- Init heart count & toggle --
     count_key2  = "post2_heart"
@@ -338,7 +401,7 @@ with tab_watch:
                     alerts_placeholder.metric("🔔 Pending Alerts", len(st.session_state.alerts))
 
 # Chatbot Tab
-with tab1:
+with tab_chatbot:
     st.subheader("💬 Chatbot")
     st.markdown("Pick a starter or type your own question below:")
 
@@ -426,10 +489,217 @@ with tab1:
                         st.session_state.messages.append({"role": "assistant", "content": content})                               
 
 
-
 # Dashboard Tab
-with tab2:
-    st.header("Brand Overview")
+with tab_dash:
+    st.subheader("📊 Dashboard")
+    st.write("Click **Generate Dashboard** to load data and render interactive charts.")
+    st.markdown("---")
+
+    # 1) Load & cache data
+    if st.button("Generate Dashboard"):
+        with st.spinner("Loading and processing data..."):
+            resp = asyncio.run(get_all_scores())
+            raw = resp.content.strip().removeprefix("```json").removesuffix("```")
+            df = pd.DataFrame(json.loads(raw))
+            df["date"] = pd.to_datetime(df["date"])
+            st.session_state.df = df
+
+    # 2) If we have data, show filters + charts
+    if "df" in st.session_state:
+        df = st.session_state.df
+
+        # Filtering controls
+        st.markdown("> **Filter Controls:** Select up to 10 brands and choose a date range to narrow down your charts.")
+        all_brands = sorted(df["brand"].unique())
+        selected_brands = st.multiselect(
+            "Select up to 10 brands",
+            options=all_brands,
+            default=all_brands[:10],
+            max_selections=10
+        )
+        df["date_only"] = df["date"].dt.date
+        min_d, max_d = df["date_only"].min(), df["date_only"].max()
+        dr = st.date_input("Date range", value=(min_d, max_d))
+
+        df_f = df[
+            (df["brand"].isin(selected_brands)) &
+            (df["date_only"] >= dr[0]) &
+            (df["date_only"] <= dr[1])
+        ]
+
+        # 3) Five grouped‐bar charts
+        metrics = [
+            ("🌱 Labor Score",     "labor_score",
+             "This chart shows each brand's labor policy score at every selected reporting date."),
+            ("🔍 Sourcing Score",  "sourcing_score",
+             "This chart shows how brands compare in sourcing transparency over time."),
+            ("⚡ Carbon Score",    "carbon_score",
+             "This chart tracks brands' carbon footprint scores across your chosen period."),
+            ("🐾 Animal Score",    "animal_score",
+             "This chart illustrates brands' animal-welfare performance over time."),
+            ("🏛️ Governance Score","governance_score",
+             "This chart highlights corporate-governance scores for each brand across dates.")
+        ]
+
+        for label, col, desc in metrics:
+            st.markdown(f"### {label} by Brand Over Time")
+            st.caption(desc)
+            fig = px.bar(
+                df_f,
+                x="date_only",
+                y=col,
+                color="brand",
+                barmode="group"
+            )
+            fig.update_layout(xaxis_title="Date", yaxis_title="Score")
+            st.plotly_chart(fig, use_container_width=True)
+
+        # 4) Correlation Matrix
+        st.markdown("---")
+        st.subheader("🔗 Correlation Between Ethical Metrics")
+        st.caption(
+            "Shows the pairwise Pearson correlation between labor, sourcing, carbon, "
+            "animal and governance scores across your selected brands and dates."
+        )
+        cols = ["labor_score","sourcing_score","carbon_score","animal_score","governance_score"]
+        corr = df_f[cols].corr()
+        fig_corr = px.imshow(
+            corr,
+            text_auto=True,
+            aspect="auto",
+            color_continuous_scale="RdBu",
+            origin="lower",
+            title="Correlation Between Ethical Metrics"
+        )
+        fig_corr.update_layout(xaxis_title="Metric", yaxis_title="Metric")
+        st.plotly_chart(fig_corr, use_container_width=True)
+
+        # 4) Correlation Matrix
+        st.markdown("---")
+        st.subheader("🔗 Correlation Between Ethical Metrics")
+        st.caption(
+            "Shows the pairwise Pearson correlation between labor, sourcing, carbon, "
+            "animal and governance scores across your selected brands and dates."
+        )
+
+        # Compute correlations on the filtered dataframe (df_f)
+        metrics_cols = [
+            "labor_score",
+            "sourcing_score",
+            "carbon_score",
+            "animal_score",
+            "governance_score",
+        ]
+        corr = df_f[metrics_cols].corr()
+
+        # Render as a heatmap
+        fig_corr = px.imshow(
+            corr,
+            text_auto=True,
+            aspect="auto",
+            color_continuous_scale="RdBu",
+            origin="lower",
+            title="Correlation Between Ethical Metrics"
+        )
+        fig_corr.update_layout(
+            xaxis_title="Metric",
+            yaxis_title="Metric",
+            margin=dict(t=50, l=50, r=50, b=50)
+        )
+        st.plotly_chart(fig_corr, use_container_width=True)
+
+    # 5) Ethics vs. Financial Performance Scatter
+    st.markdown("---")
+    st.subheader("📈 Ethics Index vs. Revenue (M USD)")
+    st.caption(
+        "Each point is a brand’s average ethical index (avg of five scores) vs its revenue "
+        "for 2024, with a trendline to show overall correlation."
+    )
+
+    # Button to fetch scatter data
+    if st.button("Generate Ethics x Finance Scatter"):
+        with st.spinner("Loading data…"):
+            resp = asyncio.run(get_ethics_finance())
+            raw = resp.content.strip().removeprefix("```json").removesuffix("```")
+            df_sc = pd.DataFrame(json.loads(raw))
+            print(df_sc)
+            # cache for this session
+            st.session_state.df_scatter = df_sc
+
+    # Render if available
+    if "df_scatter" in st.session_state:
+        df_sc = st.session_state.df_scatter
+        fig_sc = px.scatter(
+            df_sc,
+            x="ethics_index",
+            y="revenue_musd",
+            color="brand",
+            hover_name="brand",
+            title="Ethics Index vs. Revenue (M USD)",
+            labels={
+                "ethics_index": "Ethics Index (avg score)",
+                "revenue_musd": "Revenue (M USD)"
+            },
+            trendline="ols"
+        )
+        fig_sc.update_layout(margin=dict(t=40, b=20, l=20, r=20))
+        st.plotly_chart(fig_sc, use_container_width=True)
+
+    # 6) Sector & Region Breakdown
+    st.markdown("---")
+    st.subheader("⚖️ Average Metric by Sector & Region")
+    st.caption(
+        "Compare average scores by industry sector and headquarters region. "
+        "Pick a metric below and then generate the breakdown."
+    )
+    metric_map = {
+        "Labor":    "avg_labor",
+        "Sourcing": "avg_sourcing",
+        "Carbon":   "avg_carbon",
+        "Animal":   "avg_animal",
+        "Governance":"avg_governance",
+    }
+    choice = st.selectbox("Choose metric", list(metric_map.keys()))
+    col = metric_map[choice]
+    if st.button("Generate Sector & Region Breakdown"):
+        with st.spinner("Fetching sector & region data…"):
+            resp = asyncio.run(get_sector_region_breakdown())
+            raw = resp.content.strip().removeprefix("```json").removesuffix("```")
+            df_sr = pd.DataFrame(json.loads(raw))
+            st.session_state.df_sr = df_sr
+
+    if "df_sr" in st.session_state:
+        df_sr = st.session_state.df_sr
+
+        # Bar chart by sector
+        st.markdown(f"### Average {choice} Score by Sector")
+        fig_sec = px.bar(
+            df_sr,
+            x="sector",
+            y=col,
+            color="sector",
+            title=f"{choice} by Sector",
+        )
+        fig_sec.update_layout(xaxis_title="Sector", yaxis_title=f"Avg {choice}")
+        st.plotly_chart(fig_sec, use_container_width=True)
+
+        # Bar chart by region
+        st.markdown(f"### Average {choice} Score by Region")
+        df_reg = (
+            df_sr.groupby("region")[col]
+                .mean()
+                .reset_index()
+                .sort_values(col, ascending=False)
+        )
+        fig_reg = px.bar(
+            df_reg,
+            x="region",
+            y=col,
+            color="region",
+            title=f"{choice} by Region",
+        )
+        fig_reg.update_layout(xaxis_title="Region", yaxis_title=f"Avg {choice}")
+        st.plotly_chart(fig_reg, use_container_width=True)
 
 #     st.header("Database Dashboard")
 

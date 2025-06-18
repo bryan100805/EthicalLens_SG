@@ -1,36 +1,50 @@
-# MCP SQL Chatbot & Dashboard
+# EthicalLens SG
 
-This project demonstrates how to build an interactive SQL chatbot and a dynamic dashboard using natural language processing (NLP) and the Modular Control Protocol (MCP). It allows users to query an SQL database using natural language and visualize the data in a web-based dashboard.
+An AI intergrated Streamlit MCP app for **ethical brand–awareness**, combining natural-language queries, interactive dashboards, and personalized alerts across five key metrics (labor, sourcing, carbon, animal, governance).
 
-## Features
+<img src="image/readme_hometab.png" alt="Weekly Spotlight" width="800"/>
 
-*   **Natural Language SQL Queries:** Interact with an SQL database using natural language. The chatbot understands your questions and translates them into SQL queries.
-*   **Dynamic Dashboard Generation:** Generate interactive HTML dashboards based on the database schema and data.
-*   **Database Schema Analysis:** The system analyzes the database schema to identify the domain, key metrics, and appropriate visualizations.
-*   **MCP Integration:** Leverages the Modular Control Protocol (MCP) for secure and efficient database interaction.
-*   **Interactive Charts:** Uses Chart.js to create interactive charts in the dashboard.
-*   **Responsive Design:** The generated dashboards are responsive and mobile-friendly, thanks to Tailwind CSS.
-*   **UV Package Manager:** Uses UV package manager for dependency management.
+## 🔍 Features
+- **Weekly Spotlight**: Home tab with curated highlights, fun insights & reactions.  
+- **Brands**: Search/filter all brands, view latest ethical scores & financials, add to Watchlist.  
+- **Watchlist**: Set per-brand alert thresholds, see pending alerts, manage your list.  
+- **Chatbot**: Natural-language SQL queries powered by MCP + LLM, with starter prompts.  
+- **Dashboard**: Interactive charts that helps to bring about insights.
+  1. Time-series grouped-bar charts for all five metrics  
+  2. Correlation heatmap  
+  3. Ethics vs. Revenue scatter (2024)  
+  4. Sector & region breakdown  
+- **MCP Integration:** Leverages the Modular Control Protocol (MCP) for secure and efficient database interaction.
 
-## Project Structure
+## 📁 File Structure
+```bash
+├─ app.py # Streamlit UI & tab logic
+├─ agent.py # LLM + MCP server integration
+├─ brand_agent.py # MCP helper: get_brand_list / get_brand_details
+├─ dashboard_agent.py # (LLM) dashboard-planning agent
+├─ mcp_dashboard_agent.py # MCP helper: get_all_scores, scatter, sector/region
+├─ mcp_scatter_agent.py # MCP helper: ethics × finance (2024)
+├─ mcp_sector_agent.py # MCP helper: sector & region averages
+├─ llm_model.py # LLM model loader
+├─ test_query.sql # Example schema & seed data
+├─ pyproject.toml # UV & Python dependencies
+├─ README.md # This file
+└─ images/ # PNGs used in Home tab
+```
 
-*   **`app.py`:** The main Streamlit application that provides the user interface for the chatbot and dashboard.
-*   **`agent.py`:** Contains the code for the natural language SQL query/graph agent.
-*   **`dashboard_agent.py`:** Contains the code for the dashboard generation agent.
+## ⚙️ Prerequisites
 
-## Prerequisites
-
-*   **UV:** This project uses the UV package manager. Install it by following the instructions on the UV website: https://astral.sh/uv. i.e.pip install uv
-*   **Python 3.9+:** Ensure you have Python 3.9 or a later version installed.
-*   **MCP SQL Server:** You need an MCP SQL server running. You can set it up using the `uvx` command. 
-*   **Database:** An SQL database (e.g., MySQL) with some data.
-*   **Environment Variables:** Set the following environment variables in a `.env` file in the project root:
-    *   `GROQ_API_KEY`: Your Groq API key.
-    *   `DB_HOST`: The hostname or IP address of your database server.
-    *   `DB_USER`: The username for your database.
-    *   `DB_PASSWORD`: The password for your database.
-    *   `DB_NAME`: The name of your database.
-    * `MODEL_ID`: The model id to use. (optional)
+- Python 3.10+  
+- UV package manager (or install via pip)  [For more info](https://astral.sh/uv)
+- MCP SQL Server (run via `uvx mcp-sql-server --db-host your_host --db-database your_database --db-user your_user --db-password your_password`)  
+- Environment variables in a `.env` file at project root:  
+  DB_HOST=your_hostname
+  DB_USER=your_db_user  
+  DB_PASSWORD=your_db_password  
+  DB_NAME=your_db_name  
+  MODEL_API_KEY=your_LLM_API_key  
+  MODEL_ID=optional_model_id (i.e., gemini-flash-2.0)
+- SQL database (e.g., MySQL, PostGres) with some seeeded data (or seed the MySQL database via `test_query.sql`).
 
 ## Setup and Installation (using UV)
 
@@ -100,35 +114,33 @@ This project demonstrates how to build an interactive SQL chatbot and a dynamic 
 
 ## Usage
 
-### Chatbot Tab
+### Home  
+Weekly Spotlight with Patagonia highlights and Top Movers—hover for sources, react with ❤️.
 
-1.  **Ask Questions:** In the "Chatbot" tab, type your questions about the database in natural language (e.g., "Compare the brand with the highest carbon score and the lowest carbon score.").
-2.  **View Results:** The chatbot will respond with a natural language summary of the data or a chart when it is suitable.
+### Brands  
+Filter/select brands → “Details” shows radar & time-series charts + financial metrics → “☆ Watch” adds to Watchlist.
 
-### Dashboard Tab
+### Watchlist  
+See watched brands, set alert thresholds, click **Set Alerts** to generate notifications, clear on unwatch or threshold reset.
 
-- Work in progress
+### Chatbot  
+Click a starter prompt or type your own natural-language query; the LLM + MCP agent executes SQL and returns summaries or charts.
 
-## Key Components
+### Dashboard  
+1. Click **Generate Dashboard** to load data.  
+2. Use brand multiselect and date picker to filter.  
+3. Explore five grouped-bar charts, correlation heatmap, ethics×revenue scatter, and sector & region breakdown.
 
-*   **`agent.py`:**
-    *   Defines the `db_connection_agent` which is responsible for understanding user queries and generating SQL.
-    *   Uses the `get_schema` and `read_query` tools from the MCP toolkit.
-    *   Returns a natural language summary of the query results.
-*   **`dashboard_agent.py`:**
-    - Work in progress
-*   **`app.py`:**
-    *   The main Streamlit application.
-    *   Provides the user interface for the chatbot and dashboard.
-    *   Uses `st.session_state` to persist chat messages.
-    *   Uses `st.container` and JavaScript to keep the chat at the top of the screen.
-    *   Uses `st.tabs` to create the "Chatbot" and "other tabs.
+## 📚 Additional Files
 
-## Contributing
+- **test_query.sql**: Schema & seed data for testing.  
+- **images/**: Home tab graphics.
+
+## 🤝 Contributing
 
 - [bryan100805](https://github.com/bryan100805)
 - [Kennetan2](https://github.com/Kennetan2)
 
-## License
+## 📄 License
 
 MIT
